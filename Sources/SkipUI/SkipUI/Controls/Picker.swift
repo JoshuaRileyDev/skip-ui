@@ -75,16 +75,29 @@ public struct Picker<SelectionValue> : View, ListItemAdapting {
         let selectedValueView = views.first { $0.value == selection.wrappedValue } ?? EmptyView()
         let selectedValueLabel: View
         let isMenu: Bool
-        if style == .automatic || style == .menu {
+        switch style {
+        case .automatic, .menu:
             selectedValueLabel = HStack(spacing: 2.0) {
                 selectedValueView
                 Image(systemName: "chevron.down").accessibilityHidden(true)
             }
             isMenu = true
-        } else {
+            
+        case .segmented:
+            selectedValueLabel = HStack(spacing: 2.0) {
+                ForEach(views) { view in
+                    Button(action: { selection.wrappedValue = view.value as! SelectionValue }) {
+                        view
+                    }.buttonStyle(SegmentedButtonStyle(isSelected: view.value == selection.wrappedValue))
+                }
+            }
+            isMenu = false
+
+        default:
             selectedValueLabel = selectedValueView
             isMenu = false
         }
+        
         if performsAction {
             let isMenuExpanded = remember { mutableStateOf(false) }
             Box {
@@ -171,6 +184,7 @@ public struct Picker<SelectionValue> : View, ListItemAdapting {
     @Composable private func titleFromLabel(context: ComposeContext) -> Text {
         return label.collectViews(context: context).compactMap { $0.strippingModifiers(perform: { $0 as? Text }) }.first ?? Text(verbatim: String(describing: selection.wrappedValue))
     }
+    
     #else
     public var body: some View {
         stubView()
@@ -187,19 +201,10 @@ public struct PickerStyle: RawRepresentable, Equatable {
 
     public static let automatic = PickerStyle(rawValue: 1)
     public static let navigationLink = PickerStyle(rawValue: 2)
-
-    @available(*, unavailable)
     public static let segmented = PickerStyle(rawValue: 3)
-
-    @available(*, unavailable)
     public static let inline = PickerStyle(rawValue: 4)
-
-    @available(*, unavailable)
     public static let wheel = PickerStyle(rawValue: 5)
-
     public static let menu = PickerStyle(rawValue: 6)
-
-    @available(*, unavailable)
     public static let palette = PickerStyle(rawValue: 7)
 }
 
@@ -320,142 +325,5 @@ struct PickerSelectionView<SelectionValue> : View {
 //    public init<C>(sources: C, selection: KeyPath<C.Element, Binding<SelectionValue>>, @ViewBuilder content: () -> Content, @ViewBuilder label: () -> Label) where C : RandomAccessCollection { fatalError() }
 //}
 //
-//@available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
-//extension Picker /* where Label == Text */ {
-//
-//    /// Creates a picker that generates its label from a localized string key.
-//    ///
-//    /// - Parameters:
-//    ///     - titleKey: A localized string key that describes the purpose of
-//    ///       selecting an option.
-//    ///     - selection: A binding to a property that determines the
-//    ///       currently-selected option.
-//    ///     - content: A view that contains the set of options.
-//    ///
-//    /// This initializer creates a ``Text`` view on your behalf, and treats the
-//    /// localized key similar to ``Text/init(_:tableName:bundle:comment:)``. See
-//    /// ``Text`` for more information about localizing strings.
-//    ///
-//    /// To initialize a picker with a string variable, use
-//    /// ``init(_:selection:content:)-5njtq`` instead.
-//
-//
-//    /// Creates a picker that generates its label from a localized string key.
-//    ///
-//    /// If the wrapped values of the collection passed to `sources` are not all
-//    /// the same, some styles render the selection in a mixed state. The
-//    /// specific presentation depends on the style.  For example, a Picker
-//    /// with a menu style uses dashes instead of checkmarks to indicate the
-//    /// selected values.
-//    ///
-//    /// In the following example, a picker in a document inspector controls the
-//    /// thickness of borders for the currently-selected shapes, which can be of
-//    /// any number.
-//    ///
-//    ///     enum Thickness: String, CaseIterable, Identifiable {
-//    ///         case thin
-//    ///         case regular
-//    ///         case thick
-//    ///
-//    ///         var id: String { rawValue }
-//    ///     }
-//    ///
-//    ///     struct Border {
-//    ///         var color: Color
-//    ///         var thickness: Thickness
-//    ///     }
-//    ///
-//    ///     @State private var selectedObjectBorders = [
-//    ///         Border(color: .black, thickness: .thin),
-//    ///         Border(color: .red, thickness: .thick)
-//    ///     ]
-//    ///
-//    ///     Picker(
-//    ///         "Border Thickness",
-//    ///         sources: $selectedObjectBorders,
-//    ///         selection: \.thickness
-//    ///     ) {
-//    ///         ForEach(Thickness.allCases) { thickness in
-//    ///             Text(thickness.rawValue)
-//    ///         }
-//    ///     }
-//    ///
-//    /// - Parameters:
-//    ///     - titleKey: A localized string key that describes the purpose of
-//    ///       selecting an option.
-//    ///     - sources: A collection of values used as the source for displaying
-//    ///       the Picker's selection.
-//    ///     - selection: The key path of the values that determines the
-//    ///       currently-selected options. When a user selects an option from the
-//    ///       picker, the values at the key path of all items in the `sources`
-//    ///       collection are updated with the selected option.
-//    ///     - content: A view that contains the set of options.
-//    ///
-//    /// This initializer creates a ``Text`` view on your behalf, and treats the
-//    /// localized key similar to ``Text/init(_:tableName:bundle:comment:)``. See
-//    /// ``Text`` for more information about localizing strings.
-//    @available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
-//    public init<C>(_ titleKey: LocalizedStringKey, sources: C, selection: KeyPath<C.Element, Binding<SelectionValue>>, @ViewBuilder content: () -> Content) where C : RandomAccessCollection { fatalError() }
-//
-//    /// Creates a picker bound to a collection of bindings that generates its
-//    /// label from a string.
-//    ///
-//    /// If the wrapped values of the collection passed to `sources` are not all
-//    /// the same, some styles render the selection in a mixed state. The
-//    /// specific presentation depends on the style.  For example, a Picker
-//    /// with a menu style uses dashes instead of checkmarks to indicate the
-//    /// selected values.
-//    ///
-//    /// In the following example, a picker in a document inspector controls the
-//    /// thickness of borders for the currently-selected shapes, which can be of
-//    /// any number.
-//    ///
-//    ///     enum Thickness: String, CaseIterable, Identifiable {
-//    ///         case thin
-//    ///         case regular
-//    ///         case thick
-//    ///
-//    ///         var id: String { rawValue }
-//    ///     }
-//    ///
-//    ///     struct Border {
-//    ///         var color: Color
-//    ///         var thickness: Thickness
-//    ///     }
-//    ///
-//    ///     @State private var selectedObjectBorders = [
-//    ///         Border(color: .black, thickness: .thin),
-//    ///         Border(color: .red, thickness: .thick)
-//    ///     ]
-//    ///
-//    ///     Picker(
-//    ///         "Border Thickness",
-//    ///         sources: $selectedObjectBorders,
-//    ///         selection: \.thickness
-//    ///     ) {
-//    ///         ForEach(Thickness.allCases) { thickness in
-//    ///             Text(thickness.rawValue)
-//    ///         }
-//    ///     }
-//    ///
-//    /// - Parameters:
-//    ///     - title: A string that describes the purpose of selecting an option.
-//    ///     - sources: A collection of values used as the source for displaying
-//    ///       the Picker's selection.
-//    ///     - selection: The key path of the values that determines the
-//    ///       currently-selected options. When a user selects an option from the
-//    ///       picker, the values at the key path of all items in the `sources`
-//    ///       collection are updated with the selected option.
-//    ///     - content: A view that contains the set of options.
-//    ///
-//    /// This initializer creates a ``Text`` view on your behalf, and treats the
-//    /// title similar to ``Text/init(_:)-9d1g4``. See ``Text`` for more
-//    /// information about localizing strings.
-//    ///
-//    /// To initialize a picker with a localized string key, use
-//    /// ``init(_:sources:selection:content:)-6e1x`` instead.
-//    @available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
-//    public init<C, S>(_ title: S, sources: C, selection: KeyPath<C.Element, Binding<SelectionValue>>, @ViewBuilder content: () -> Content) where C : RandomAccessCollection, S : StringProtocol { fatalError() }
-//}
 
 #endif
